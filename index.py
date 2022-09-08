@@ -448,7 +448,7 @@ inv_index_stat_path = sys.argv[3]
 
 # 476811 pages - Phase 1
 # 60M+ pages - Phase 2 
-wiki_dump_in_path = "./enwiki-20220720-pages-articles-multistream15.xml-p15824603p17324602.bz2"
+# wiki_dump_in_path = "./enwiki-20220720-pages-articles-multistream15.xml-p15824603p17324602.bz2"
 
 if __name__ == "__main__":
     path = os.path.join(inv_index_out_path, "intermediates")
