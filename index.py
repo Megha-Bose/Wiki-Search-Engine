@@ -30,6 +30,10 @@ with open('stopwords.txt', 'r') as f:
     for stopword in f:
         stopword = stopword.strip(' ').strip("\n")
         check_stopword[stopword] = 1
+f.close()
+
+def num_there(s):
+    return any(i.isdigit() for i in s)
 
 
 def tokenize(content):
@@ -187,41 +191,53 @@ class WikiDocHandler(xml.sax.ContentHandler):
 
         # Updating word count for each field in the document they appeared in.
         for word in doc.title_words:
-            try:
-                index[word][doc.doc_num]
-            except:
-                index[word][doc.doc_num] = [0] * num_fields
-            index[word][doc.doc_num][0] += 1
+            if not num_there(word):
+                word = word.strip('-_')
+                try:
+                    index[word][doc.doc_num]
+                except:
+                    index[word][doc.doc_num] = [0] * num_fields
+                index[word][doc.doc_num][0] += 1
         for word in doc.body_words:
-            try:
-                index[word][doc.doc_num]
-            except:
-                index[word][doc.doc_num] = [0] * num_fields
-            index[word][doc.doc_num][1] += 1
+            if not num_there(word):
+                word = word.strip('-_')
+                try:
+                    index[word][doc.doc_num]
+                except:
+                    index[word][doc.doc_num] = [0] * num_fields
+                index[word][doc.doc_num][1] += 1
         for word in doc.infobox_words:
-            try:
-                index[word][doc.doc_num]
-            except:
-                index[word][doc.doc_num] = [0] * num_fields
-            index[word][doc.doc_num][2] += 1
+            if not num_there(word):
+                word = word.strip('-_')
+                try:
+                    index[word][doc.doc_num]
+                except:
+                    index[word][doc.doc_num] = [0] * num_fields
+                index[word][doc.doc_num][2] += 1
         for word in doc.category_words:
-            try:
-                index[word][doc.doc_num]
-            except:
-                index[word][doc.doc_num] = [0] * num_fields
-            index[word][doc.doc_num][3] += 1
+            if not num_there(word):
+                word = word.strip('-_')
+                try:
+                    index[word][doc.doc_num]
+                except:
+                    index[word][doc.doc_num] = [0] * num_fields
+                index[word][doc.doc_num][3] += 1
         for word in doc.link_words:
-            try:
-                index[word][doc.doc_num]
-            except:
-                index[word][doc.doc_num] = [0] * num_fields
-            index[word][doc.doc_num][4] += 1
+            if not num_there(word):
+                word = word.strip('-_')
+                try:
+                    index[word][doc.doc_num]
+                except:
+                    index[word][doc.doc_num] = [0] * num_fields
+                index[word][doc.doc_num][4] += 1
         for word in doc.reference_words:
-            try:
-                index[word][doc.doc_num]
-            except:
-                index[word][doc.doc_num] = [0] * num_fields
-            index[word][doc.doc_num][5] += 1
+            if not num_there(word):
+                word = word.strip('-_')
+                try:
+                    index[word][doc.doc_num]
+                except:
+                    index[word][doc.doc_num] = [0] * num_fields
+                index[word][doc.doc_num][5] += 1
 
         # sample --- sachin-t:d1-1|d5-1
         if curr_doc_count % 20000 == 0 and curr_doc_count:
@@ -230,29 +246,37 @@ class WikiDocHandler(xml.sax.ContentHandler):
                      str(curr_file_num) + ".txt", "w+")
             title_f = open(f'titles/titles_{title_file_no}.txt', 'w+')
             for page_title in page_titles:
-                title_f.write(page_title)
+                title_f.write(page_title.strip()+'\n')
             title_file_no += 1
             page_titles.clear()
             title_f.close()
+
+        if len(index) % 20000 == 0 and len(index):
+            curr_file_num += 1
+            f = open(inv_index_out_path + "/intermediates/index_file_" +
+                     str(curr_file_num) + ".txt", "w+")
             word_list = sorted(index.keys())
             for word in (word_list):
                 for i in range(len(field_acronyms)):
                     line = ""
                     line = word + "-" + field_acronyms[i] + ":"
                     docs = index[word]
+                    flag = 0
                     for doc in (sorted(docs.keys())):
-                        line = line + "d" + str(doc) + "-"
                         if index[word][doc][i]:
+                            line = line + "d" + str(doc) + "-"
                             line = line + str(index[word][doc][i])
                             line = line + "|"
-                        else:
-                            line = ""
+                            flag = 1
+                    if flag == 0:
+                        line = ""
                     if len(line) > 0 and line[-1] == "|":
                         line = line[:-1]
                     f.write(line)
                     if len(line) > 0:
                         f.write("\n")
             f.close()
+            index.clear()
             index = defaultdict(dict)
 
     def reset(self):
@@ -272,6 +296,7 @@ class WikiDocHandler(xml.sax.ContentHandler):
             doc = WikiDoc(curr_doc_count, self.doc_id, self.title, self.text)
             page_titles.append(self.title.lower())
             self.updateIndex(doc)
+            del doc
             curr_doc_count += 1
             print(curr_doc_count, end="\r")
             self.reset()
@@ -288,7 +313,7 @@ class WikiDocHandler(xml.sax.ContentHandler):
 
 def writeIndexStatFile():
     global total_num_tokens, num_index_tokens, index, curr_doc_count, num_index_files
-    f = open("my_stat.txt", "w+")
+    f = open(inv_index_out_path + "my_stat.txt", "w+")
     f.write(str(total_num_tokens) + "\n" + str(num_index_tokens) + "\n" + str(curr_doc_count))
     f.close()
     # index size in GB (for e.g. 17.36) -> size of inv_index_out_path + '/final_index' + '.txt'
@@ -383,7 +408,7 @@ def main(wiki_xml_dump):
     parser.setContentHandler(handler)
     parser.parse(wiki_xml_dump)
     if len(page_titles) > 0:
-        title_f = open(f'titles/titles_{title_file_no}.txt', 'w+')
+        title_f = open(inv_index_out_path + '/titles/titles_' + str(title_file_no) + '.txt', 'w+')
         for page_title in page_titles:
             title_f.write(page_title)
     if curr_doc_count % 20000 != 0:
@@ -408,6 +433,7 @@ def main(wiki_xml_dump):
                 f.write(line)
                 if len(line) > 0:
                     f.write("\n")
+        index.clear()
         f.close()
     mergeFiles()
 
@@ -416,7 +442,7 @@ def split_final_index():
     global num_index_tokens, num_index_files
     num_final_index_lines = 0
     final_index = open(inv_index_out_path + '/final_index' + '.txt', 'r')
-    secondary_index = open('secondary_index.txt', 'w+')
+    secondary_index = open(inv_index_out_path + '/secondary_index.txt', 'w+')
     line = final_index.readline().strip('\n')
     num_final_index_lines += 1
     lines = []
@@ -429,12 +455,13 @@ def split_final_index():
             num_index_tokens += 1
         if len(lines) % 10000 == 0:
             secondary_index.write(lines[0].split(":")[0] + '\n')
-            fin_index = open('indexes/index_' + str(num_index_files) + '.txt', 'w+')
+            fin_index = open(inv_index_out_path + '/indexes/index_' + str(num_index_files) + '.txt', 'w+')
             for l in lines:
                 fin_index.write(l + '\n')
             fin_index.close()
             num_index_files += 1
             lines = []
+            fin_index.close()
         line = final_index.readline().strip('\n')
         num_final_index_lines += 1
     # print(num_final_index_lines)
@@ -446,10 +473,6 @@ wiki_dump_in_path = sys.argv[1]
 inv_index_out_path = sys.argv[2]
 inv_index_stat_path = sys.argv[3]
 
-# 476811 pages - Phase 1
-# 60M+ pages - Phase 2 
-# wiki_dump_in_path = "./enwiki-20220720-pages-articles-multistream15.xml-p15824603p17324602.bz2"
-
 if __name__ == "__main__":
     path = os.path.join(inv_index_out_path, "intermediates")
     if not os.path.exists(path):
@@ -458,7 +481,7 @@ if __name__ == "__main__":
     with BZ2File(wiki_dump_in_path) as wiki_xml_dump:
         st = time.time()
         main(wiki_xml_dump)
-    # main("https://en.wikipedia.org/wiki/Special:Export/Bruce_Willis")
+
     end1 = time.time()
     print("Primary Indexing Done. Time taken: ", end1 - st)
     print('Creating Secondary Index...')

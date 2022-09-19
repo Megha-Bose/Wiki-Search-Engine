@@ -64,8 +64,8 @@ with open('stopwords.txt', 'r') as f:
 
 
 def get_title(doc_num):
-    file = open("titles/titles_" + str(doc_num // 20000) + '.txt')
-    title = file.readlines()[doc_num % 20000].strip('\n')
+    file = open("titles/titles_" + str(doc_num // 2000) + '.txt')
+    title = file.readlines()[doc_num % 2000].strip('\n')
     return title
 
 
@@ -140,6 +140,7 @@ def rank(inp_terms, fields, type):
     print_text = ""
     max_results = 10
     count = 0
+    i = 0
     while i < len(results):
         if term_occurences[results[i][0]] > num_terms / 1000:
             print_text += (str(results[i][0]) + ', ' + get_title(results[i][0]) + "\n")
